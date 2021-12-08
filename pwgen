@@ -1,0 +1,82 @@
+#! /usr/bin/env -S PYENV_VERSION=3.9.6 python
+# vim: ft=python
+
+import argparse
+import os.path
+import random
+import string
+import subprocess
+import sys
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--words-file', action='store', metavar='FILE',
+                        help="Read words from FILE")
+    parser.add_argument('-n', '--number-words', action='store', metavar='NUM', type=int,
+                        help="Generate a password consisting of NUM words")
+    parser.add_argument('-c', '--camel-case', action='store_true',
+                        help="Camel Case words")
+    parser.add_argument('-d', '--include-digits', action='store_true',
+                        help="Include numbers between the randomly chosen words")
+    parser.add_argument('-p', '--include-punctuation', action='store_true',
+                        help="Include punctuation between the randomly chosen words")
+    parser.add_argument('-l', '--min-length', action='store', type=int,
+                        help="Maximum length of password in characters")
+    parser.add_argument('-L', '--max-length', action='store', type=int,
+                        help="Maximum length of password in characters")
+    default_words_file = os.path.join(os.path.dirname(sys.argv[0]), 'pwgen_nouns.txt')
+    parser.set_defaults(words_file=default_words_file,
+                        number_words=3,
+                        include_digits=False,
+                        include_punctuation=False,
+                        min_length=0,
+                        max_length=99999)
+    args = parser.parse_args()
+    args.use_separators = False
+    args.required_separators = []
+    args.all_separators = ''
+    if args.include_digits:
+        args.use_separators = True
+        args.required_separators.append(string.digits)
+        args.all_separators += string.digits
+    if args.include_punctuation:
+        args.use_separators = True
+        args.required_separators.append(string.punctuation)
+        args.all_separators += string.punctuation
+    return args
+
+
+def read_wordlist(filename):
+    words = [w for w in open(filename).read().splitlines() if '-' not in w]
+
+    return words
+
+def generate_password(args, words):
+    rtn = None
+    while (rtn is None) or (len(rtn) < args.min_length) or (len(rtn) > args.max_length):
+        rtn = ''
+        required_separators = list(args.required_separators)
+        for i in range(args.number_words):
+            if rtn and args.use_separators:
+                separators = required_separators.pop(0) if required_separators else args.all_separators
+                rtn += random.choice(separators)
+            word = random.choice(words)
+            if args.camel_case:
+                word = word[0].upper() + word[1:]
+            rtn += word
+    return rtn
+
+def main():
+    args = parse_args()
+    words = read_wordlist(args.words_file)
+    password = generate_password(args, words)
+    print(password)
+#   subprocess.run(['pbcopy'],
+#                  input=password,
+#                  encoding='utf-8')
+#   print("(copied to clipboard)")
+
+if __name__ == '__main__':
+    main()
+
