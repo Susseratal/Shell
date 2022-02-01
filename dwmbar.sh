@@ -1,12 +1,20 @@
 #!/bin/bash
 
-function getsound(){
+function getSound(){
 pactl list sinks | grep '^[[:space:]]Volume:' | \
         head -n $(( $SINK + 1 )) | tail -n 1 | sed -e 's,.* \([0-9][0-9]*\)%.*,\1,'
 } 
 
+function getBattery(){
+        cat /sys/class/power_supply/BAT0/capacity
+}
+
+function getDiskFree(){
+        df -h ~/. | awk '(FNR==2) {print $4}'
+}
+
 function set_once() {
-        xsetroot -name "Battery: $(cat /sys/class/power_supply/BAT0/capacity)% | Sound: $(getsound)% | Packages: $(pacman -Q | wc -l) | Free: $(df -h ~/. | awk '{print $4}' | awk '{getline; print $1}') | $(date "+%a %B %d %H:%M") "
+        xsetroot -name "Battery: $(getBattery)% | Sound: $(getSound)% | Packages: $(pacman -Q | wc -l) | Free: $(getDiskFree) | $(date "+%a %B %d %H:%M") "
 }
 
 if [ "$1" = "--loop" ]; then
